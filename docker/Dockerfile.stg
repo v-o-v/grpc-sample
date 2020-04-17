@@ -1,0 +1,61 @@
+FROM docker:18.06 as docker-builder
+
+FROM alpine:3.8 as builder
+
+WORKDIR /go/src/app
+
+ARG GOLANG_VERSION=1.12.9
+ARG GOLANG_DOWNLOAD_SHA256=ac2a6efcc1f5ec8bdc0db0a988bb1d301d64b6d61b7e8d9e42f662fbb75a2b9b
+
+ENV GO111MODULE=on
+ENV GOPATH=/go \
+	PATH=/go/bin:/usr/local/go/bin:/usr/lib/google-cloud-sdk/bin:$PATH \
+	GOLANG_VERSION="$GOLANG_VERSION" \
+	GOLANG_DOWNLOAD_SHA256="$GOLANG_DOWNLOAD_SHA256"
+
+COPY --from=docker-builder /usr/local/bin/docker /usr/local/bin/docker
+RUN apk update
+RUN set -eux && \
+	apk --no-cache add \
+		bash \
+		curl \
+		g++ \
+		gcc \
+		git \
+		libc6-compat \
+		make \
+		musl-dev \
+		openssh-client \
+		py-crcmod \
+		python && \
+	\
+	curl -o go.tgz -sSL "https://golang.org/dl/go${GOLANG_VERSION}.linux-amd64.tar.gz" && \
+	echo "${GOLANG_DOWNLOAD_SHA256} *go.tgz" | sha256sum -c - && \
+	tar -C /usr/local -xzf go.tgz && \
+	rm go.tgz && \
+	mkdir -p ${GOPATH}
+
+COPY go.mod ./
+
+RUN go mod download
+
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /go/bin/mochi-service
+
+FROM alpine:3.8
+
+ENV PORT 8080
+
+RUN apk --update add tzdata && \
+    cp /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
+RUN apk add --no-cache ca-certificates && \
+    update-ca-certificates
+
+
+COPY ./docker/ssl /var/data/ssl
+COPY --from=builder /go/bin/mochi-service /go/bin/mochi-service
+
+EXPOSE 8080
+ENTRYPOINT ["/go/bin/mochi-service"]
+
