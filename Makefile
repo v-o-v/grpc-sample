@@ -12,8 +12,5 @@ run:
 debug:
 	go run main.go
 
-client:
-	go run client/main.go
-
 build:
 	docker build -f ./docker/Dockerfile.stg .
