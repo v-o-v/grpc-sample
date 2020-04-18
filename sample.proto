@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package sample;
+
+service Hoge {
+    rpc Hello (HelloRequest) returns (HelloResponse) {
+    }
+}
+
+message HelloRequest {
+    string abc = 1;
+}
+
+message HelloResponse {
+    string xyz = 1;
+}

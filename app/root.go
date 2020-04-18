@@ -26,7 +26,6 @@ func InitRoot() {
 	}
 
 	s := Router()
-	log.Println(s)
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
