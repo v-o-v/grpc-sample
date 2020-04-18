@@ -18,6 +18,7 @@ func main() {
 	defer conn.Close()
 	client := sample.NewHogeClient(conn)
 	message := &sample.HelloRequest{Abc: "tama"}
+
 	res, err := client.Hello(context.Background(), message)
 
 	fmt.Printf("result:%#v \n", res)
